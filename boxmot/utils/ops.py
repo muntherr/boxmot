@@ -86,6 +86,69 @@ def tlwh2xywh(x):
     return y
 
 
+def tlwh2xyah(x):
+    """
+    Convert bounding box coordinates from (top, left, width, height) format to 
+    (center_x, center_y, aspect_ratio, height) format.
+    
+    Args:
+        x (np.ndarray) or (torch.Tensor): The input bounding box coordinates in (t, l, w, h) format.
+    Returns:
+        y (np.ndarray) or (torch.Tensor): The bounding box coordinates in (x_c, y_c, a, h) format.
+    """
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    y[..., 0] = x[..., 0] + x[..., 2] / 2  # center x
+    y[..., 1] = x[..., 1] + x[..., 3] / 2  # center y
+    y[..., 2] = x[..., 2] / x[..., 3]  # aspect ratio (width / height)
+    y[..., 3] = x[..., 3]  # height
+    return y
+
+
+def xyah2tlwh(x):
+    """
+    Convert bounding box coordinates from (center_x, center_y, aspect_ratio, height) format to
+    (top, left, width, height) format.
+    
+    Args:
+        x (np.ndarray) or (torch.Tensor): The input bounding box coordinates in (x_c, y_c, a, h) format.
+    Returns:
+        y (np.ndarray) or (torch.Tensor): The bounding box coordinates in (t, l, w, h) format.
+    """
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    y[..., 2] = x[..., 2] * x[..., 3]  # width = aspect_ratio * height
+    y[..., 0] = x[..., 0] - y[..., 2] / 2  # top left x
+    y[..., 1] = x[..., 1] - x[..., 3] / 2  # top left y
+    y[..., 3] = x[..., 3]  # height
+    return y
+
+
+def xyah2xyxy(x):
+    """
+    Convert bounding box coordinates from (center_x, center_y, aspect_ratio, height) format to
+    (x1, y1, x2, y2) format.
+    """
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    w = x[..., 2] * x[..., 3]  # width = aspect_ratio * height
+    y[..., 0] = x[..., 0] - w / 2  # x1
+    y[..., 1] = x[..., 1] - x[..., 3] / 2  # y1
+    y[..., 2] = x[..., 0] + w / 2  # x2
+    y[..., 3] = x[..., 1] + x[..., 3] / 2  # y2
+    return y
+
+
+def xyxy2xyah(x):
+    """
+    Convert bounding box coordinates from (x1, y1, x2, y2) format to
+    (center_x, center_y, aspect_ratio, height) format.
+    """
+    y = x.clone() if isinstance(x, torch.Tensor) else np.copy(x)
+    y[..., 0] = (x[..., 0] + x[..., 2]) / 2  # center x
+    y[..., 1] = (x[..., 1] + x[..., 3]) / 2  # center y
+    y[..., 3] = x[..., 3] - x[..., 1]  # height
+    y[..., 2] = (x[..., 2] - x[..., 0]) / y[..., 3]  # aspect ratio
+    return y
+
+
 def compute_box_overlap(box1: np.ndarray, box2: np.ndarray, 
                        format: str = 'xyxy') -> float:
     """
@@ -659,10 +722,16 @@ def make_divisible(x, divisor):
 
 def clip_coords(boxes, img_shape):
     """Clip bounding xyxy bounding boxes to image shape (height, width)"""
-    boxes[:, 0].clip_(0, img_shape[1])  # x1
-    boxes[:, 1].clip_(0, img_shape[0])  # y1
-    boxes[:, 2].clip_(0, img_shape[1])  # x2
-    boxes[:, 3].clip_(0, img_shape[0])  # y2
+    if isinstance(boxes, torch.Tensor):
+        boxes[:, 0].clamp_(0, img_shape[1])  # x1
+        boxes[:, 1].clamp_(0, img_shape[0])  # y1
+        boxes[:, 2].clamp_(0, img_shape[1])  # x2
+        boxes[:, 3].clamp_(0, img_shape[0])  # y2
+    else:
+        boxes[:, 0] = np.clip(boxes[:, 0], 0, img_shape[1])  # x1
+        boxes[:, 1] = np.clip(boxes[:, 1], 0, img_shape[0])  # y1
+        boxes[:, 2] = np.clip(boxes[:, 2], 0, img_shape[1])  # x2
+        boxes[:, 3] = np.clip(boxes[:, 3], 0, img_shape[0])  # y2
 
 
 def scale_coords(img1_shape, coords, img0_shape, ratio_pad=None):
