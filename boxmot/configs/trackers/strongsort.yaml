@@ -1,39 +1,102 @@
 min_conf:
   type: uniform
-  default: 0.6  # from the default parameters
-  range: [0.2, 0.8]
+  default: 0.1  # Keep low to not filter out potential good tracks
+  range: [0.05, 0.4]
 
 ema_alpha:
   type: uniform
-  default: 0.9  # from the default parameters
-  range: [0.7, 0.95]
+  default: 0.9  # Enhanced adaptive EMA in track implementation
+  range: [0.8, 0.95]
 
 max_cos_dist:
   type: uniform
-  default: 0.4  # from the default parameters
-  range: [0.1, 0.4]
+  default: 0.15  # Reduced for stricter appearance matching to prevent ID swaps
+  range: [0.1, 0.25]
 
 max_iou_dist:
   type: uniform
-  default: 0.7  # from the default parameters
-  range: [0.5, 0.95]
+  default: 0.7  # Optimized for balanced matching
+  range: [0.6, 0.85]
 
 max_age:
   type: randint
-  default: 30  # from the default parameters
-  range: [10, 151]  # upper bound exclusive
+  default: 50  # Increased to retain tracks longer and prevent ID loss
+  range: [30, 100]  # upper bound exclusive
 
 n_init:
   type: randint
-  default: 3  # from the default parameters
+  default: 2  # Reduced for faster track confirmation
   range: [1, 4]  # upper bound exclusive
 
 mc_lambda:
   type: uniform
-  default: 0.98  # from the default parameters
-  range: [0.90, 0.999]
+  default: 0.995  # Increased for better motion consistency
+  range: [0.98, 0.999]
 
 nn_budget:
   type: choice
-  default: 100  # from the default parameters
-  options: [100]
+  default: 150  # Increased for better ReID memory
+  options: [100, 150, 200]
+
+# New enhanced parameters for improved tracking
+conf_thresh_high:
+  type: uniform
+  default: 0.7  # High confidence threshold for prioritized matching
+  range: [0.6, 0.9]
+
+conf_thresh_low:
+  type: uniform
+  default: 0.3  # Low confidence threshold for filtering
+  range: [0.2, 0.5]
+
+id_preservation_weight:
+  type: uniform
+  default: 0.1  # Weight for ID preservation in cost computation
+  range: [0.05, 0.2]
+
+adaptive_matching:
+  type: categorical
+  default: true  # Enable adaptive matching
+  options: [true, false]
+
+appearance_weight:
+  type: uniform
+  default: 0.6  # Weight for appearance features
+  range: [0.4, 0.8]
+
+motion_weight:
+  type: uniform
+  default: 0.4  # Weight for motion features
+  range: [0.2, 0.6]
+
+# Additional advanced parameters
+feature_smoothing:
+  type: uniform
+  default: 0.95  # Feature smoothing factor
+  range: [0.9, 0.98]
+
+quality_threshold:
+  type: uniform
+  default: 0.4  # Minimum quality score for track maintenance
+  range: [0.2, 0.6]
+
+stability_threshold:
+  type: uniform
+  default: 0.3  # Minimum stability score for track retention
+  range: [0.2, 0.5]
+
+# Kalman filter enhancement parameters
+adaptive_kf:
+  type: categorical
+  default: true  # Enable adaptive Kalman filter
+  options: [true, false]
+
+motion_noise_factor:
+  type: uniform
+  default: 1.0  # Motion noise scaling factor
+  range: [0.5, 2.0]
+
+observation_noise_factor:
+  type: uniform
+  default: 1.0  # Observation noise scaling factor
+  range: [0.5, 2.0]
